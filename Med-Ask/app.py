@@ -111,11 +111,11 @@ def query():
 
 def working(query):
 
-    api_key = "JJ61HMGdIyz6Vmw4irIoHEpW0"
-    api_secret = "Vwplf1OYcy2YwoOpPEs0dNpWbEPFuT13oVTT3Ij9MmEe4XUCVo"
-    access_key = "1586563005088530433-8ymjkSmAnguZ99C83Q0IplFWRpfFZr"
-    access_key_secret = "TQSff2CkRasGCs1IMhCHJHdK0ca5Yy8qeWIlieEzzhPgl"
-    openai_key = "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"
+    api_key = ""
+    api_secret = ""
+    access_key = ""
+    access_key_secret = ""
+    openai_key = ""
 
     auth = tweepy.OAuthHandler(api_key, api_secret)
     auth.set_access_token(access_key, access_key_secret)
@@ -150,6 +150,7 @@ def working(query):
             api.update_status(final_tweet)
 
         return text2
+
 
 
 app.run(debug=True, port=5002)
