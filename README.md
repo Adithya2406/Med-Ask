@@ -1,70 +1,61 @@
-## Med-Ask
-**A medical chatbot**
+# Med-Ask
 
----
-### **Overview**
-Med-Ask is an AI-powered medical chatbot designed to provide users with instant, conversational responses to medical queries. Built using Python and leveraging the capabilities of ChatGPT, this project aims to offer accessible, preliminary medical information and guidance. Med-Ask is intended for educational and informational purposes only and should not be used as a substitute for professional medical advice.
+Med-Ask is a Flask prototype that classifies incoming questions as medical or non-medical and uses a language model to produce a conversational informational response.
 
----
-### **Features**
-- Conversational interface for medical queries
-- Integrates with ChatGPT for intelligent, context-aware responses
-- Built entirely in Python for ease of development and deployment
-- Simple and extensible codebase for further enhancements
+> This project is an educational prototype. It does not diagnose conditions, recommend treatment, or replace a qualified healthcare professional.
 
----
-### **Application**
-Med-Ask can be used as:
-- A virtual assistant for answering general medical questions
-- An educational tool for learning about common health topics
-- A prototype for healthcare chatbots and AI-driven medical support tools
+## Features
 
-**Note:** Med-Ask does not provide medical diagnoses or replace consultation with healthcare professionals.
+- Browser-based Flask interface
+- Vocabulary-based medical-query screening
+- Language-model response generation
+- User feedback collection for unrecognized terms
+- Random health-message display from a local CSV file
 
----
-### **Getting Started**
-**Prerequisites**
-- Python 3.x
-- Access to the OpenAI API (or relevant ChatGPT API key)
+## Project structure
 
-**Installation**
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Adithya2406/Med-Ask.git
-   cd Med-Ask
-   ```
-2. Install required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   
-**Configuration**
-- Set up your API keys and environment variables as needed for ChatGPT integration.
-  
-**Usage**
-- Run the chatbot script:
-   ```bash
-   python med_ask.py
-   ```
-- Interact with the chatbot via the command line or the provided interface.
+The application source is under `Med-Ask/`:
 
----
-### **Project Structure**
-- `med_ask.py` – Main chatbot application
-- `requirements.txt` – List of Python dependencies
-- Other supporting scripts and files
+| File | Purpose |
+|---|---|
+| `app.py` | Flask routes and response-generation logic |
+| `in_query.csv` | Terms submitted through the feedback route |
+| `logo.png`, `logobig.jpg`, `finallogo.jpg` | Interface assets |
 
----
-### **Contributing**
-Contributions are welcome! Please open an issue or submit a pull request to discuss improvements, bug fixes, or new features.
+The original prototype also expects `med_list.csv`, `med_list2.csv`, `quotes.csv`, and a `templates/` directory. Those assets are not present in this repository snapshot and must be restored before the full interface can run.
 
----
-### **License**
-This project is open source.
+## Setup
 
----
-### **Disclaimer**
-Med-Ask is for informational purposes only. It is not intended for diagnosis, treatment, or as a substitute for professional medical advice. Always consult a qualified healthcare provider for medical concerns.
----
+```bash
+git clone <repository-url>
+cd Med-Ask/Med-Ask
 
-**Repository:** [Med-Ask on GitHub](https://github.com/Adithya2406/Med-Ask)
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r ../requirements.txt
+```
+
+Configure the language-model credential through the environment rather than source code:
+
+```bash
+export OPENAI_API_KEY=<your-key>
+```
+
+Then start the development server:
+
+```bash
+python app.py
+```
+
+The default port is `5002`. Override it with the `PORT` environment variable.
+
+## Security
+
+No credentials are stored in the repository. Keep local secrets in environment variables or an ignored `.env` file, and never commit that file.
+
+## Limitations
+
+- The current code uses a legacy completion API and is preserved as a project prototype.
+- Responses may be inaccurate or incomplete.
+- Required vocabulary and template assets must be restored locally.
+- User-submitted health information should not be retained in production without an appropriate privacy and security design.
