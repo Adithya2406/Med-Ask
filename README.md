@@ -22,7 +22,7 @@ The application source is under `Med-Ask/`:
 | `in_query.csv` | Terms submitted through the feedback route |
 | `logo.png`, `logobig.jpg`, `finallogo.jpg` | Interface assets |
 
-The original prototype also expects `med_list.csv`, `med_list2.csv`, `quotes.csv`, and a `templates/` directory. Those assets are not present in this repository snapshot and must be restored before the full interface can run.
+Optional vocabulary files `med_list.csv` and `med_list2.csv` improve medical-query screening, while `quotes.csv` supplies rotating interface text. The application uses safe fallbacks when these files are absent.
 
 ## Setup
 
@@ -57,5 +57,4 @@ No credentials are stored in the repository. Keep local secrets in environment v
 
 - The current code uses a legacy completion API and is preserved as a project prototype.
 - Responses may be inaccurate or incomplete.
-- Required vocabulary and template assets must be restored locally.
 - User-submitted health information should not be retained in production without an appropriate privacy and security design.
