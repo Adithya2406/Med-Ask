@@ -1,154 +1,106 @@
-from flask import Flask, render_template, url_for, request
 import os
-import openai
 import random
+from pathlib import Path
+
+import openai
 import pandas as pd
-import copy
+from flask import Flask, jsonify, render_template_string, request
 
-df = pd.read_csv(
-    r'med_list.csv', on_bad_lines='skip')
-df = df.applymap(lambda s: s.lower() if type(s) == str else s)
-df1 = pd.read_csv(
-    r'med_list2.csv', on_bad_lines='skip')
-df1 = df1.applymap(lambda s: s.lower() if type(s) == str else s)
-df_quotes = pd.read_csv(
-    r'quotes.csv', on_bad_lines='skip')
-df_in = pd.read_csv(
-    r'in_query.csv', on_bad_lines='skip')
 
+BASE_DIR = Path(__file__).resolve().parent
 app = Flask(__name__)
 
 
-@app.route('/')
-@app.route('/home')
+def _read_csv(name, **kwargs):
+    path = BASE_DIR / name
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path, on_bad_lines="skip", **kwargs)
+
+
+def _load_medical_terms():
+    terms = set()
+    for filename in ("med_list.csv", "med_list2.csv"):
+        frame = _read_csv(filename)
+        if "Terms" in frame:
+            terms.update(str(value).strip().lower() for value in frame["Terms"].dropna())
+    return terms
+
+
+def _load_quotes():
+    frame = _read_csv("quotes.csv")
+    if "Quotes" in frame:
+        return [str(value) for value in frame["Quotes"].dropna()]
+    return ["Ask clear questions and verify health information with a professional."]
+
+
+MEDICAL_TERMS = _load_medical_terms()
+QUOTES = _load_quotes()
+
+
+PAGE = """
+<!doctype html>
+<title>Med-Ask</title>
+<h1>Med-Ask</h1>
+<p>{{ quote }}</p>
+<form method="post" action="/result">
+  <label for="query">Medical question</label>
+  <input id="query" name="query" required>
+  <button type="submit">Ask</button>
+</form>
+{% if answer %}<h2>Response</h2><p>{{ answer }}</p>{% endif %}
+<p><strong>Educational prototype:</strong> not medical advice or a diagnosis.</p>
+"""
+
+
+@app.get("/")
+@app.get("/home")
 def home():
-    returnquote = quote()
-    return render_template("index.html", quotes=returnquote)
+    return render_template_string(PAGE, quote=random.choice(QUOTES), answer=None)
 
 
-@app.route('/inaccurate.html')
-def inaccurate():
-    # var2=query()
-    return render_template("inaccurate.html")
-
-
-@app.route('/result', methods=['POST', 'GET'])
+@app.route("/result", methods=["POST", "GET"])
 def result():
-    input_query = request.form.to_dict()
-    print(input_query)
-    query = input_query["query"]
-
-    output = working(query)
-
-    xyz = quote()
-
-    return render_template('index.html', query=output, quotes=xyz)
+    query = (request.values.get("query") or "").strip()
+    answer = answer_query(query)
+    if request.is_json:
+        return jsonify({"answer": answer})
+    return render_template_string(PAGE, quote=random.choice(QUOTES), answer=answer)
 
 
-@app.route('/', methods=['POST', 'GET'])
-def quote():
+@app.post("/inaccurate")
+def record_unrecognized_query():
+    query = (request.values.get("query") or "").strip()
+    if not query:
+        return jsonify({"saved": False, "reason": "empty query"}), 400
 
-    list_quotes = []
-    list_quotes = df_quotes["Quotes"].tolist()
-    randno = random.randint(0, len(list_quotes)-1)
-    output_quote = list_quotes[randno]
-
-    return output_quote
-
-
-@app.route('/inaccurate', methods=['POST', 'GET'])
-def query():
-    listcsv = df_in.values.tolist()
-    
-    in_query = request.form.to_dict()
-    input_query_value = in_query["query"]
-    print(input_query_value)
-    
-    list123 = df.values.tolist()
-
-    listqwerty = []
-    list_test = copy.deepcopy(listqwerty)
-
-    list_of_in_query = input_query_value.split()
-    # print(input_query_value)
-    
-    list123= df.values.tolist()
-    # df1 = pd.DataFrame(list_of_in_query, columns=['Inaccurate Query'])
-    # print(df1)
-    
-    listqwerty=[]
-    print(list_of_in_query)
-    list_test = copy.deepcopy(listqwerty)
-
-        # df1 = pd.DataFrame(input_query_value, columns=['Inaccurate Query'])
-    for i in list_of_in_query:
-        if [i,] not in list123:
-            if i not in listcsv:
-                listqwerty.append(i)
-    print(listqwerty)
-    
-    for i in listcsv:
-        list_test.append(i[1])
-    print(list_test)
-    
-    listqwerty = listqwerty+list_test
-    print(listqwerty)
-    
-    df2 = pd.DataFrame(listqwerty)
-    df2.drop_duplicates(subset=None, inplace=True)
-    df2.to_csv(
-        r'in_query.csv')
-    print(df2)
-
-        
-    var1 = '''
-    Thank you for your response. 
-    We have accepted your request.'''
-    return render_template('inaccurate.html', var1=var1)
+    path = BASE_DIR / "in_query.csv"
+    frame = _read_csv("in_query.csv", index_col=0)
+    existing = set(frame.iloc[:, 0].astype(str)) if not frame.empty else set()
+    words = sorted(existing | set(query.lower().split()))
+    pd.DataFrame({"term": words}).to_csv(path)
+    return jsonify({"saved": True})
 
 
-def working(query):
+def answer_query(query):
+    if not query:
+        return "Enter a question."
 
-    api_key = ""
-    api_secret = ""
-    access_key = ""
-    access_key_secret = ""
-    openai_key = ""
+    tokens = set(query.lower().split())
+    if MEDICAL_TERMS and not tokens.intersection(MEDICAL_TERMS):
+        return "This does not appear to be a medical query."
 
-    auth = tweepy.OAuthHandler(api_key, api_secret)
-    auth.set_access_token(access_key, access_key_secret)
-    api = tweepy.API(auth, wait_on_rate_limit=True)
-    openai.api_key = openai_key
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    if not openai.api_key:
+        return "The application is not configured. Set OPENAI_API_KEY before starting it."
 
-    prom_input = query
-    sentence = prom_input
-    sentence = sentence.lower()
-    tokens = sentence.split()
-    list2 = []
-
-    for i in tokens:
-        df1 = df[(df['Terms'] == i)]
-        # if len(df1)==0:
-        #     df1 = df1[(df1['Terms']==i)]
-        list2 = list2 + df1["Terms"].tolist()
-
-    print(list2)
-
-    if (len(list2) == 0):
-        return ("Not a Medical Query")
-    else:
-        # print("Medical Query")
-        response = openai.Completion.create(
-            engine="text-davinci-003", prompt=prom_input, max_tokens=400)
-        text = response.choices[0].text
-        text2 = "It is a medical Query & Solution is : "+text
-
-        final_tweet = 'Question: ' + prom_input + '\n' + 'Answer: ' + text
-        if(len(final_tweet)<200):
-            api.update_status(final_tweet)
-
-        return text2
-
+    response = openai.Completion.create(
+        engine=os.getenv("OPENAI_MODEL", "text-davinci-003"),
+        prompt=query,
+        max_tokens=400,
+    )
+    text = response.choices[0].text.strip()
+    return "This response is informational only: " + text
 
 
 if __name__ == "__main__":
