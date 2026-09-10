@@ -1,10 +1,8 @@
 from flask import Flask, render_template, url_for, request
-from os import access
-import tweepy
+import os
 import openai
 import random
 import pandas as pd
-import sys
 import copy
 
 df = pd.read_csv(
@@ -153,4 +151,8 @@ def working(query):
 
 
 
-app.run(debug=True, port=5002)
+if __name__ == "__main__":
+    app.run(
+        debug=os.getenv("FLASK_DEBUG") == "1",
+        port=int(os.getenv("PORT", "5002")),
+    )
